@@ -1,4 +1,4 @@
-# Attendance Manager Pro 🚀
+# RollCall Pro 🚀
 
 A sleek, modern attendance tracking application for students built with React Native (Expo). This app helps students manage their class attendance effectively with an intuitive interface and powerful features, keeping all data securely stored on the device.
 
