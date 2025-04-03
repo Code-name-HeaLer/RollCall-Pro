@@ -1,163 +1,120 @@
-# Student Attendance Plus
+# Attendance Manager Pro 🚀
 
-A sleek, modern attendance tracking application for students built with React Native (Expo) and NativeWind. This app helps students manage their class attendance effectively with an intuitive interface and powerful features - all while keeping data securely stored on the device.
+A sleek, modern attendance tracking application for students built with React Native (Expo). This app helps students manage their class attendance effectively with an intuitive interface and powerful features, keeping all data securely stored on the device.
 
-## Core Features
+<!-- Optional: Add a screenshot or GIF here -->
+<!-- ![App Screenshot](link-to-your-screenshot.png) -->
+
+## ✨ Core Features
 
 ### Smart Attendance Tracking
 
-- **Course Management**: Add, edit, and organize courses with customizable details (name, professor, location, schedule, color coding)
-- **Attendance Recording**: Quick one-tap attendance marking (Present, Absent, Late, Excused)
-- **Schedule Integration**: Weekly timetable view with automatic class reminders
-- **Attendance Statistics**: Visual analytics showing attendance percentages per course and overall
-- **Absence Forecasting**: Warning system when approaching attendance thresholds
-- **Attendance History**: Calendar view to track patterns and review past attendance
+- **Course Management**: Add, edit, and organize courses with customizable details (name, professor, location, schedule, color coding).
+- **Attendance Recording**: Quick one-tap attendance marking (Present, Absent, Late, Excused) directly from the daily schedule.
+- **Schedule Integration**: Weekly timetable view and a daily schedule on the home screen.
+- **Attendance Statistics**: Visual analytics showing attendance percentages per course and overall.
+- **Attendance History**: Calendar view to track patterns and review past attendance.
+- **Minimum Attendance Tracking**: Set course attendance requirements and monitor progress.
 
 ### Enhanced Student Experience
 
-- **Note Taking**: Add quick notes to attendance entries (e.g., "Pop quiz", "Covered chapter 5")
-- **Assignment Tracking**: Link assignments to specific class sessions
-- **Minimum Attendance Calculator**: Set course attendance requirements and track progress
-- **Offline Support**: Full functionality without internet connection
-- **Data Export**: Export attendance records as CSV or PDF
-- **Backup & Restore**: Local backup solution using device storage
+- **Note Taking**: Add quick notes to specific attendance entries.
+- **Offline Support**: Full functionality without an internet connection, thanks to local data storage.
+- **Data Export/Backup**: Options to export data and perform local backups (Verify implementation details).
+- **Customizable Themes**: Light/dark mode support.
 
-## UI/UX Design Philosophy
+## 🛠️ Tech Stack
 
-### Visual Design
+- **Framework**: React Native (Expo SDK)
+- **Language**: TypeScript
+- **Navigation**: Expo Router
+- **Styling**: Tailwind CSS (likely via NativeWind)
+- **State Management**: React Context API
+- **Local Storage**: AsyncStorage
+- **Icons**: Ionicons (Expo Vector Icons)
+- **Charts**: (Potentially React Native SVG & Victory Charts - verify if used)
 
-- **Minimalist Aesthetic**: Clean, uncluttered interfaces with ample white space
-- **Dynamic Theming**: Light/dark mode with accent color customization
-- **Microinteractions**: Subtle animations for feedback and engagement
-- **Typography**: Modern, highly readable font hierarchy
-- **Card-Based Layout**: Information organized in swipeable cards
-- **Visual Indicators**: Color-coded status indicators for attendance stats
+## 📁 Project Structure
 
-### User Experience
+AttendanceManager/
+├── app/ # Expo Router screens and navigation setup (layout.tsx)
+│ ├── layout.tsx # Main navigation layout
+│ ├── index.tsx # Home screen
+│ ├── courses.tsx # Courses list screen
+│ ├── add-course.tsx # Add course screen
+│ ├── calendar.tsx # Calendar view screen
+│ ├── settings.tsx # Settings screen
+│ ├── statistics.tsx # Statistics screen
+│ └── ... # Other screens and components specific to routing
+├── assets/ # Static assets (images, fonts)
+├── src/ # Core application logic and UI components
+│ ├── components/ # Reusable UI components (Card, Text, StatusBadge, etc.)
+│ ├── context/ # React Context for global state (DataContext)
+│ ├── data/ # Data types, initial data, or data helpers
+│ ├── utils/ # Utility functions (theming, helpers)
+│ └── ...
+├── .expo/ # Expo generated files
+├── node_modules/ # Project dependencies
+├── .gitignore # Git ignore rules
+├── app.json # Expo app configuration
+├── babel.config.js # Babel configuration
+├── package.json # Project dependencies and scripts
+├── tailwind.config.js # Tailwind CSS configuration
+├── tsconfig.json # TypeScript configuration
+└── readme.md # This file
 
-- **One-Handed Operation**: Critical actions reachable with one thumb
-- **Gesture Controls**: Swipe to mark attendance, long-press for quick actions
-- **Contextual Help**: Unobtrusive tooltips for first-time users
-- **Smart Defaults**: Intelligent suggestions based on patterns (e.g., automatically suggest marking attendance during class time)
-- **Haptic Feedback**: Subtle vibrations for confirmations
-- **Quick Actions**: Widget support for marking attendance from home screen
+## 🚀 Getting Started
 
-## Technical Specifications
+### Prerequisites
 
-### Development Stack
+- Node.js (LTS version recommended)
+- npm or yarn
+- Expo Go app on your physical device or an emulator/simulator setup
 
-- **Framework**: React Native with Expo
-- **Styling**: NativeWind (Tailwind CSS for React Native)
-- **State Management**: React Context API with local storage persistence
-- **Local Storage**: AsyncStorage for data persistence
-- **Navigation**: React Navigation v6
-- **Charts & Visualizations**: React Native SVG & Victory Charts
-- **Notifications**: Expo Notifications
+### Installation
 
-### Data Structure
+1.  **Clone the repository:**
 
-```javascript
-// Sample data structure
-{
-  "courses": [
-    {
-      "id": "unique-id-1",
-      "name": "Calculus II",
-      "professor": "Dr. Smith",
-      "location": "Science Hall 302",
-      "color": "#4F46E5",
-      "schedule": [
-        { "day": "Monday", "startTime": "10:00", "endTime": "11:30" },
-        { "day": "Wednesday", "startTime": "10:00", "endTime": "11:30" }
-      ],
-      "attendanceThreshold": 75, // minimum percentage required
-      "sessions": [
-        {
-          "date": "2025-04-01",
-          "status": "present", // present, absent, late, excused
-          "notes": "Covered integration by parts",
-          "assignments": ["Homework 5 assigned"]
-        }
-        // More sessions...
-      ]
-    }
-    // More courses...
-  ],
-  "settings": {
-    "theme": "dark",
-    "accentColor": "#4F46E5",
-    "reminderTime": 15, // minutes before class
-    "notificationsEnabled": true
-  }
-}
-```
+    ```bash
+    git clone https://github.com/Code-name-HeaLer/RollCall-Pro
+    cd AttendanceManager
+    ```
 
-## Implementation Approach
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
 
-### Phase 1: Core Functionality
+### Running the App
 
-- Basic course management
-- Simple attendance recording
-- Local data persistence
+1.  **Start the development server:**
+    ```bash
+    npx expo start
+    ```
+2.  **Run on your device/emulator:**
+    - Scan the QR code displayed in the terminal using the Expo Go app on your iOS or Android device.
+    - Or, press `a` to run on an Android emulator, `i` to run on an iOS simulator, or `w` to run in the web browser.
 
-### Phase 2: Enhanced Features
+## ⚙️ Usage
 
-- Statistics and visualizations
-- Calendar integration
-- Note-taking capabilities
+1.  **Add Courses**: Navigate to the "Courses" tab/screen and add your courses, including schedule details.
+2.  **Mark Attendance**: On the "Home" screen, view your schedule for the day and tap the icons (Present, Absent, Late, Excused) for each class.
+3.  **View Stats & History**: Explore the "Statistics" and "Calendar" screens to monitor your attendance records over time.
+4.  **Adjust Settings**: Customize the theme and other preferences in the "Settings" screen.
 
-### Phase 3: Polish & Optimization
+## 🤝 Contributing
 
-- Advanced UI animations
-- Performance optimization
-- Widget support
+Contributions are welcome! If you'd like to contribute, please follow these steps:
 
-## Screen Descriptions
+1.  Fork the repository.
+2.  Create a new branch (`git checkout -b feature/your-feature-name`).
+3.  Make your changes.
+4.  Commit your changes (`git commit -m 'Add some feature'`).
+5.  Push to the branch (`git push origin feature/your-feature-name`).
+6.  Open a Pull Request.
 
-### Home Screen
-
-- Day view with upcoming classes
-- Quick attendance marking actions
-- Overall attendance statistics card
-- Recent activity summary
-
-### Courses Screen
-
-- List of all courses with visual attendance indicators
-- Add/edit course functionality
-- Quick filter options (today, this week, all)
-
-### Course Detail Screen
-
-- Comprehensive attendance history
-- Statistics visualization
-- Schedule information
-- Absence forecasting
-
-### Calendar Screen
-
-- Month view with color-coded attendance markers
-- Day details on selection
-- Attendance streak indicators
-
-### Statistics Screen
-
-- Attendance percentage by course
-- Weekly/monthly trends
-- Comparison charts
-- Goal tracking
-
-### Settings Screen
-
-- Theme customization
-- Notification preferences
-- Data management (backup/restore/export)
-- Help & feedback
-
-## Design Assets
-
-- Color palette: Primary #4F46E5, Secondary #10B981, Accent #F59E0B
-- Font family: Inter for body text, Poppins for headings
-- Icon pack: Phosphor Icons
-
-This README provides a comprehensive guide for implementing the Student Attendance Plus app, focusing on a modern UI/UX design with powerful features that don't require user authentication while keeping all data securely on the device.
+<!-- Optional: Add License section -->
+<!-- ## 📄 License -->
+<!-- This project is licensed under the MIT License - see the LICENSE.md file for details. -->
