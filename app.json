@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "AttendanceManager",
-    "slug": "AttendanceManager",
+    "name": "RollCall Pro",
+    "slug": "rollcall-pro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/favicon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,9 +13,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/favicon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.healer_senpai.RollCallPro"
     },
     "web": {
       "bundler": "metro",
@@ -27,7 +28,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/favicon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -36,6 +37,20 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "4603e77e-11a6-4b95-8460-c0e92d5de791"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4603e77e-11a6-4b95-8460-c0e92d5de791"
     }
   }
 }
