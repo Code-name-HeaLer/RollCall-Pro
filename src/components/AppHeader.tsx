@@ -17,10 +17,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ title = 'RollCall Pro' }) 
     <SafeAreaView edges={['top']} style={{ backgroundColor: colors.card }}>
       <View style={[styles.header, { backgroundColor: colors.card }]}>
         <View style={styles.titleContainer}>
-          <Image 
-            source={require('../../assets/images/favicon.png')} 
-            style={styles.logo} 
-          />
           <Text 
             variant="h2" 
             weight="bold" 
@@ -51,12 +47,6 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  logo: {
-    width: 30,
-    height: 30,
-    marginRight: 10,
-    resizeMode: 'contain',
   },
   title: {
     marginBottom: 0, // Override default margin
