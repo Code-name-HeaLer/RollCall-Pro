@@ -1,17 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
-import { Stack } from 'expo-router';
-import { useData } from '../src/context/DataContext';
-import { 
-    calculateOverallAttendance, 
-    calculateCourseAttendance, 
-    findBestAndWorstCourses, 
+import { Stack, useRouter } from 'expo-router';
+import { useData } from '../../src/context/DataContext';
+import { Text } from '../../src/components/Text';
+import { Card } from '../../src/components/Card';
+import { getThemeColors } from '../../src/utils/theme';
+import {
+    calculateOverallAttendance,
+    calculateCourseAttendance,
+    findBestAndWorstCourses,
     calculateAttendanceStreaks,
-    CourseStat 
-} from '../src/utils/statistics';
-import { Text } from '../src/components/Text';
-import { Card } from '../src/components/Card';
-import { getThemeColors } from '../src/utils/theme';
+    CourseStat
+} from '../../src/utils/statistics';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -56,9 +56,7 @@ const StatisticsScreen = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen 
         options={{ 
-          title: 'Statistics',
-          headerStyle: { backgroundColor: colors.card },
-          headerShadowVisible: false,
+          headerShown: false,
         }} 
       />
 

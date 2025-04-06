@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, FlatList, StyleSheet } from 'react-native';
 import { Session } from '../data/types';
 import { Card } from './Card';
 import { Text } from './Text';
@@ -7,7 +7,6 @@ import { useData } from '../context/DataContext';
 import { getThemeColors } from '../utils/theme';
 import StatusBadge from './ui/StatusBadge';
 import { Ionicons } from '@expo/vector-icons';
-import EditSessionModal from './EditSessionModal'; // Try adding extension
 
 interface Props {
     sessions: Session[];
@@ -15,29 +14,10 @@ interface Props {
 }
 
 const AttendanceHistoryList: React.FC<Props> = ({ sessions, courseId }) => {
-    const { updateSessionDetails, settings } = useData();
+    const { settings } = useData();
     const colors = getThemeColors(settings?.theme || 'light');
-    const [modalVisible, setModalVisible] = useState(false);
-    const [editingSession, setEditingSession] = useState<Session | null>(null);
-
-    const handleEditPress = (session: Session) => {
-        setEditingSession(session);
-        setModalVisible(true);
-    };
-
-    const handleCloseModal = () => {
-        setModalVisible(false);
-        setEditingSession(null);
-    };
-
-    const handleSaveChanges = (details: { notes?: string; assignments?: string[] }) => {
-        if (editingSession) {
-            updateSessionDetails(courseId, editingSession.date, details);
-        }
-    };
 
     const renderSessionItem = ({ item }: { item: Session }) => {
-        const hasDetails = item.notes || item.assignments?.length;
         return (
             <View style={[styles.sessionItem, { borderBottomColor: colors.border }]}>
                 <View style={styles.sessionHeader}>
@@ -47,24 +27,6 @@ const AttendanceHistoryList: React.FC<Props> = ({ sessions, courseId }) => {
                     </View>
                     <StatusBadge status={item.status} />
                 </View>
-                
-                <TouchableOpacity
-                   style={[styles.notesButtonStyle, { backgroundColor: colors.primary + '15' }]}
-                   onPress={() => handleEditPress(item)}
-                   activeOpacity={0.7}
-                >
-                   <Ionicons 
-                       name={hasDetails ? "pencil" : "add-circle-outline"} 
-                       size={18} 
-                       color={colors.primary} 
-                   />
-                   <Text 
-                       style={{ color: colors.primary, marginLeft: 6 }} 
-                       variant="button"
-                    >
-                      {hasDetails ? "Edit Notes/Assign." : "Add Notes/Assign."}
-                   </Text>
-                </TouchableOpacity>
                 
                 {item.notes && (
                     <View style={styles.notesContainer}>
@@ -112,13 +74,6 @@ const AttendanceHistoryList: React.FC<Props> = ({ sessions, courseId }) => {
                     contentContainerStyle={styles.listContent}
                 />
             )}
-            
-            <EditSessionModal 
-                visible={modalVisible} 
-                session={editingSession} 
-                onClose={handleCloseModal} 
-                onSave={handleSaveChanges} 
-            />
         </Card>
     );
 };
@@ -144,21 +99,6 @@ const styles = StyleSheet.create({
     },
     dateIcon: {
         marginRight: 6,
-    },
-    notesButton: {
-        marginTop: 4,
-        alignSelf: 'flex-start',
-    },
-    notesButtonStyle: {
-        borderRadius: 8,
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        flexDirection: 'row', 
-        justifyContent: 'center', 
-        alignItems: 'center',   
-        overflow: 'hidden', 
-        alignSelf: 'flex-start',
-        marginTop: 8,
     },
     notesContainer: {
         marginTop: 4,

@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Dimensions, Pressable } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { useData } from '../src/context/DataContext';
-import { getThemeColors } from '../src/utils/theme';
-import { Text } from '../src/components/Text';
-import { Card } from '../src/components/Card';
+import { useData } from '../../src/context/DataContext';
+import { getThemeColors } from '../../src/utils/theme';
+import { Text } from '../../src/components/Text';
+import { Card } from '../../src/components/Card';
 import { Ionicons } from '@expo/vector-icons';
-import StatusBadge from '../src/components/ui/StatusBadge';
-import { AttendanceStatus } from '../src/data/types';
+import StatusBadge from '../../src/components/ui/StatusBadge';
+import { AttendanceStatus } from '../../src/data/types';
 
 const { width } = Dimensions.get('window');
 
@@ -65,11 +65,31 @@ const HomeScreen = () => {
     setTodayStatuses(prev => ({ ...prev, [courseId]: status }));
   };
 
-  const totalSessions = courses.reduce((acc, course) => acc + (course.sessions?.length || 0), 0);
-  const totalPresent = courses.reduce((acc, course) => 
-    acc + (course.sessions?.filter(s => s.status === 'present')?.length || 0), 0
-  );
-  const attendanceRate = totalSessions ? Math.round((totalPresent / totalSessions) * 100) : 0;
+  // Calculate total attendance including mid-semester entry data
+  const calculateAttendance = () => {
+    let totalPresent = 0;
+    let totalRelevant = 0;
+
+    courses.forEach(course => {
+      // Count sessions
+      const presentSessions = course.sessions.filter(s => s.status === 'present').length;
+      const absentSessions = course.sessions.filter(s => s.status === 'absent').length;
+      
+      // Add mid-semester entry data if available
+      const midSemesterPresent = course.totalClassesAttended || 0;
+      const midSemesterTotal = course.totalClassesDone || 0;
+      const midSemesterAbsent = midSemesterTotal - midSemesterPresent;
+      
+      // Sum up for this course
+      totalPresent += presentSessions + midSemesterPresent;
+      totalRelevant += presentSessions + absentSessions + midSemesterTotal;
+    });
+
+    // Calculate overall rate
+    return totalRelevant > 0 ? Math.round((totalPresent / totalRelevant) * 100) : 0;
+  };
+
+  const attendanceRate = calculateAttendance();
   
   return (
     <ScrollView 
@@ -79,74 +99,10 @@ const HomeScreen = () => {
     >
       <Stack.Screen 
         options={{ 
-          title: 'RollCall Pro',
-          headerStyle: { backgroundColor: colors.card },
-          headerShadowVisible: false,
+          headerShown: false,
         }} 
       />
       
-      <View style={styles.quickActions}>
-        <Pressable
-          onPress={() => router.push('/courses')}
-          style={({ pressed }) => [
-            styles.actionButton,
-            { opacity: pressed ? 0.8 : 1 }
-          ]}
-        >
-          <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
-            <Ionicons name="book" size={24} color="#FFFFFF" />
-          </View>
-          <Text variant="caption" color="text" style={styles.actionText}>
-            Courses
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push('/calendar')}
-          style={({ pressed }) => [
-            styles.actionButton,
-            { opacity: pressed ? 0.8 : 1 }
-          ]}
-        >
-          <View style={[styles.iconContainer, { backgroundColor: colors.success }]}>
-            <Ionicons name="calendar" size={24} color="#FFFFFF" />
-          </View>
-          <Text variant="caption" color="text" style={styles.actionText}>
-            Calendar
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push('/statistics')}
-          style={({ pressed }) => [
-            styles.actionButton,
-            { opacity: pressed ? 0.8 : 1 }
-          ]}
-        >
-          <View style={[styles.iconContainer, { backgroundColor: colors.warning }]}>
-            <Ionicons name="stats-chart" size={24} color="#FFFFFF" />
-          </View>
-          <Text variant="caption" color="text" style={styles.actionText}>
-            Stats
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push('/settings')}
-          style={({ pressed }) => [
-            styles.actionButton,
-            { opacity: pressed ? 0.8 : 1 }
-          ]}
-        >
-          <View style={[styles.iconContainer, { backgroundColor: colors.secondary }]}>
-            <Ionicons name="settings" size={24} color="#FFFFFF" />
-          </View>
-          <Text variant="caption" color="text" style={styles.actionText}>
-            Settings
-          </Text>
-        </Pressable>
-      </View>
-
       <View style={styles.statsContainer}>
         <View style={[styles.statCard, { backgroundColor: colors.primary + '15' }]}>
           <Text variant="h2" weight="bold" color="primary" align="center">
@@ -215,7 +171,7 @@ const HomeScreen = () => {
                   </View>
 
                   <View style={[styles.attendanceActions, { borderTopColor: colors.border }]}>
-                    {(['present', 'absent', 'late', 'excused'] as AttendanceStatus[]).map(status => (
+                    {(['present', 'absent', 'canceled', 'holiday'] as AttendanceStatus[]).map(status => (
                       <Pressable 
                         key={status}
                         onPress={() => handleRecord(item.courseId, status)}
@@ -230,15 +186,15 @@ const HomeScreen = () => {
                           name={{
                             present: 'checkmark-circle-outline',
                             absent: 'close-circle-outline',
-                            late: 'time-outline',
-                            excused: 'document-text-outline'
+                            canceled: 'ban-outline',
+                            holiday: 'sunny-outline'
                           }[status] as any}
                           size={24} 
                           color={{
                              present: colors.success,
                              absent: colors.danger,
-                             late: colors.warning,
-                             excused: colors.info
+                             canceled: colors.warning,
+                             holiday: colors.primary
                           }[status]}
                         />
                       </Pressable>
@@ -325,26 +281,6 @@ const styles = StyleSheet.create({
   },
   detailText: {
     marginLeft: 4,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  actionButton: {
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    elevation: 3,
-  },
-  actionText: {
-    textAlign: 'center',
   },
   attendanceActions: {
     flexDirection: 'row',

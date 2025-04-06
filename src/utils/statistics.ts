@@ -7,19 +7,23 @@ export interface CourseStat {
     totalSessions: number;
     present: number;
     absent: number;
-    late: number;
-    excused: number;
+    canceled: number;
+    holiday: number;
 }
 
 /**
  * Calculates attendance statistics for a single course.
- * Excludes 'Excused' from percentage calculation denominator.
+ * Excludes 'Holiday' and 'Canceled' from percentage calculation denominator.
  */
 export const calculateCourseAttendance = (course: Course): CourseStat => {
     let present = 0;
     let absent = 0;
-    let late = 0;
-    let excused = 0;
+    let canceled = 0;
+    let holiday = 0;
+
+    // Factor in pre-existing attendance data if available
+    let totalClassesDone = course.totalClassesDone || 0;
+    let totalClassesAttended = course.totalClassesAttended || 0;
 
     course.sessions.forEach(session => {
         switch (session.status) {
@@ -29,16 +33,28 @@ export const calculateCourseAttendance = (course: Course): CourseStat => {
             case 'absent':
                 absent++;
                 break;
-            case 'late':
-                late++;
+            case 'canceled':
+                canceled++;
                 break;
-            case 'excused':
-                excused++;
+            case 'holiday':
+                holiday++;
                 break;
         }
     });
 
-    const relevantSessions = present + absent + late; // Denominator for percentage
+    // Add pre-existing attendance data
+    if (totalClassesDone > 0) {
+        if (totalClassesAttended > 0) {
+            present += totalClassesAttended;
+        }
+        // Calculate remaining absences
+        if (totalClassesDone > totalClassesAttended) {
+            absent += (totalClassesDone - totalClassesAttended);
+        }
+    }
+
+    // Only present and absent count toward attendance percentage
+    const relevantSessions = present + absent;
     const attendancePercentage = relevantSessions > 0 
         ? Math.round((present / relevantSessions) * 100) 
         : null;
@@ -47,11 +63,11 @@ export const calculateCourseAttendance = (course: Course): CourseStat => {
         id: course.id,
         name: course.name,
         attendancePercentage: attendancePercentage,
-        totalSessions: course.sessions.length,
+        totalSessions: course.sessions.length + (totalClassesDone || 0),
         present,
         absent,
-        late,
-        excused,
+        canceled,
+        holiday,
     };
 };
 
@@ -67,7 +83,7 @@ export const calculateOverallAttendance = (courses: Course[]): number | null => 
         if (stats.attendancePercentage !== null) {
             // We need the raw counts, not the percentage, to calculate overall correctly
             totalPresent += stats.present;
-            totalRelevant += (stats.present + stats.absent + stats.late); 
+            totalRelevant += (stats.present + stats.absent); 
         }
     });
 
@@ -119,10 +135,14 @@ export const calculateAttendanceStreaks = (course: Course): { current: number; l
 
     for (let i = 0; i < sortedSessions.length; i++) {
         const session = sortedSessions[i];
+        // Holiday and canceled sessions don't break the streak
         if (session.status === 'present') {
             currentPotentialStreak++;
+        } else if (session.status === 'holiday' || session.status === 'canceled') {
+            // Skip holiday/canceled without breaking streak
+            continue;
         } else {
-            // Reset streak if not present (absent, late, excused)
+            // Reset streak if absent
             if (currentPotentialStreak > longestStreak) {
                 longestStreak = currentPotentialStreak;
             }
@@ -136,13 +156,18 @@ export const calculateAttendanceStreaks = (course: Course): { current: number; l
     }
 
     // Determine the actual current streak (ending at the most recent session)
-    // The current streak IS the currentPotentialStreak if the loop finished on a 'present' run
-    if (sortedSessions.length > 0 && sortedSessions[sortedSessions.length - 1].status === 'present') {
-        currentStreak = currentPotentialStreak; 
-    } else {
-        currentStreak = 0; // If the last session wasn't 'present', current streak is 0
+    // Find the most recent non-holiday, non-canceled session
+    for (let i = sortedSessions.length - 1; i >= 0; i--) {
+        const session = sortedSessions[i];
+        if (session.status !== 'holiday' && session.status !== 'canceled') {
+            if (session.status === 'present') {
+                currentStreak = currentPotentialStreak;
+            } else {
+                currentStreak = 0; // Last relevant session was an absence
+            }
+            break;
+        }
     }
-
 
     return { current: currentStreak, longest: longestStreak };
 };

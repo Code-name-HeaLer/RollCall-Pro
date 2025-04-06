@@ -115,7 +115,10 @@ const TimetableScreen = () => {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.contentContainer}
+    >
       <Stack.Screen 
         options={{ 
             title: 'Manage Timetable', 
@@ -304,6 +307,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  contentContainer: {
+    padding: 16,
+    paddingBottom: 32,
+  },
   daySelectorScrollContainer: { // Style for ScrollView wrapper
       paddingHorizontal: 8, // Add padding if tabs touch edges
   },
@@ -323,6 +330,7 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
+    borderRadius: 16,
   },
   entryItem: {
     flexDirection: 'row',

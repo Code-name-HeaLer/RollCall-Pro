@@ -1,13 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Dimensions, Pressable, Button as RNButton } from 'react-native';
 import { Stack, Link, useRouter } from 'expo-router';
-import { useData } from '../src/context/DataContext';
-import { Course } from '../src/data/types';
-import { Text } from '../src/components/Text';
-import { Button } from '../src/components/Button';
-import { getThemeColors } from '../src/utils/theme';
+import { useData } from '../../src/context/DataContext';
+import { Course } from '../../src/data/types';
+import { Text } from '../../src/components/Text';
+import { Button } from '../../src/components/Button';
+import { getThemeColors } from '../../src/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { Card } from '../src/components/Card';
+import { Card } from '../../src/components/Card';
+import { calculateOverallAttendance } from '../../src/utils/statistics';
+import { ActionSheetProvider, useActionSheet } from '@expo/react-native-action-sheet';
 
 const { width } = Dimensions.get('window');
 
@@ -62,11 +64,9 @@ const CoursesScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen 
-        options={{
-          title: 'Courses',
-          headerStyle: { backgroundColor: colors.card },
-          headerShadowVisible: false,
-        }}
+        options={{ 
+          headerShown: false,
+        }} 
       />
 
       {courses.length === 0 ? (

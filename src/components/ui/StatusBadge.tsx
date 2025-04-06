@@ -33,19 +33,19 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
           color: colors.danger,
           label: 'Absent'
         };
-      case 'late':
+      case 'canceled':
         return {
           backgroundColor: 'rgba(245, 158, 11, 0.15)',
           borderColor: colors.warning,
           color: colors.warning,
-          label: 'Late'
+          label: 'Canceled'
         };
-      case 'excused':
+      case 'holiday':
         return {
-          backgroundColor: 'rgba(107, 114, 128, 0.15)',
-          borderColor: colors.secondary,
-          color: colors.secondary,
-          label: 'Excused'
+          backgroundColor: 'rgba(79, 70, 229, 0.15)',
+          borderColor: colors.primary,
+          color: colors.primary,
+          label: 'Holiday'
         };
       default:
         return {

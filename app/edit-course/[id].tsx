@@ -28,6 +28,8 @@ const EditCourseScreen = () => {
     const [professor, setProfessor] = useState('');
     const [threshold, setThreshold] = useState('');
     const [color, setColor] = useState(''); // ADD color state
+    const [classesDone, setClassesDone] = useState('');
+    const [classesAttended, setClassesAttended] = useState('');
 
     // Restore color setter in useEffect
     useEffect(() => {
@@ -36,6 +38,8 @@ const EditCourseScreen = () => {
             setProfessor(courseToEdit.professor || '');
             setThreshold(courseToEdit.attendanceThreshold?.toString() || '');
             setColor(courseToEdit.color || colors.primary); // SET color state
+            setClassesDone(courseToEdit.totalClassesDone?.toString() || '');
+            setClassesAttended(courseToEdit.totalClassesAttended?.toString() || '');
         }
     }, [courseToEdit, colors.primary]); 
 
@@ -55,12 +59,42 @@ const EditCourseScreen = () => {
              Alert.alert('Error', 'Invalid hex color code (#RRGGBB).'); return;
         }
         
+        // Parse and validate classes done and attended
+        let totalClassesDone: number | undefined = undefined;
+        let totalClassesAttended: number | undefined = undefined;
+
+        if (classesDone.trim()) {
+            totalClassesDone = parseInt(classesDone.trim(), 10);
+            if (isNaN(totalClassesDone) || totalClassesDone < 0) {
+                Alert.alert('Error', 'Total classes done must be a positive number.');
+                return;
+            }
+        }
+
+        if (classesAttended.trim()) {
+            totalClassesAttended = parseInt(classesAttended.trim(), 10);
+            if (isNaN(totalClassesAttended) || totalClassesAttended < 0) {
+                Alert.alert('Error', 'Total classes attended must be a positive number.');
+                return;
+            }
+        }
+
+        // Validate that attended classes don't exceed total classes
+        if (totalClassesDone !== undefined && totalClassesAttended !== undefined) {
+            if (totalClassesAttended > totalClassesDone) {
+                Alert.alert('Error', 'Attended classes cannot exceed total classes done.');
+                return;
+            }
+        }
+        
         try {
             await updateCourse(courseToEdit.id, { 
                 name: name.trim(), 
                 color, // ADD color to update data
                 professor: professor.trim() || undefined, 
-                attendanceThreshold, 
+                attendanceThreshold,
+                totalClassesDone,
+                totalClassesAttended,
             });
              if (router.canGoBack()) { router.back(); }
         } catch (error) { /* ... */ }
@@ -180,6 +214,39 @@ const EditCourseScreen = () => {
                          maxLength={3}
                      />
                 </View>
+                
+                {/* Mid-Semester Entry Fields */}
+                <View style={styles.sectionHeader}>
+                    <Ionicons name="calendar-outline" size={18} color={colors.secondaryText} style={styles.sectionIcon} />
+                    <Text variant="body" weight="semibold" color="secondaryText">Mid-Semester Entry (Optional)</Text>
+                </View>
+                
+                <View style={styles.inputContainer}>
+                    <Text variant="body2" color="secondaryText" style={styles.label}>Total Classes Done</Text>
+                    <TextInput
+                        style={[styles.input, { backgroundColor: colors.inputBackground, color: colors.text, borderColor: colors.border }]}
+                        value={classesDone}
+                        onChangeText={setClassesDone}
+                        placeholder={courseToEdit?.totalClassesDone ? courseToEdit.totalClassesDone.toString() : "e.g., 10"}
+                        placeholderTextColor={colors.secondaryText}
+                        keyboardType="numeric"
+                    />
+                </View>
+
+                <View style={styles.inputContainer}>
+                    <Text variant="body2" color="secondaryText" style={styles.label}>Total Classes Attended</Text>
+                    <TextInput
+                        style={[styles.input, { backgroundColor: colors.inputBackground, color: colors.text, borderColor: colors.border }]}
+                        value={classesAttended}
+                        onChangeText={setClassesAttended}
+                        placeholder={courseToEdit?.totalClassesAttended ? courseToEdit.totalClassesAttended.toString() : "e.g., 8"}
+                        placeholderTextColor={colors.secondaryText}
+                        keyboardType="numeric"
+                    />
+                    <Text variant="caption" color="secondaryText" style={styles.helpText}>
+                        These values will be used to calculate your attendance percentage for courses you joined mid-semester.
+                    </Text>
+                </View>
             </Card>
 
             {/* Schedule Card REMOVED */}
@@ -252,6 +319,19 @@ const styles = StyleSheet.create({
         marginLeft: 12,
         borderWidth: 1,
         borderColor: 'rgba(0,0,0,0.1)',
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        marginTop: 8,
+    },
+    sectionIcon: {
+        marginRight: 8,
+    },
+    helpText: {
+        marginTop: 8,
+        fontStyle: 'italic',
     },
 });
 
