@@ -43,9 +43,9 @@ const AttendanceRecorder: React.FC<Props> = ({ courseId, getTodayDateString, onR
             iconColor: '#EA4335'
         },
         { 
-            status: 'late' as AttendanceStatus, 
-            title: 'Late', 
-            icon: 'time',
+            status: 'canceled' as AttendanceStatus, 
+            title: 'Canceled', 
+            icon: 'ban',
             style: {
                 backgroundColor: '#FFF8E1',
                 borderWidth: 1,
@@ -54,15 +54,15 @@ const AttendanceRecorder: React.FC<Props> = ({ courseId, getTodayDateString, onR
             iconColor: '#FBBC04'
         },
         { 
-            status: 'excused' as AttendanceStatus, 
-            title: 'Excused', 
-            icon: 'document-text',
+            status: 'holiday' as AttendanceStatus, 
+            title: 'Holiday', 
+            icon: 'sunny',
             style: {
-                backgroundColor: '#FFF3E0',
+                backgroundColor: '#E8F0FE',
                 borderWidth: 1,
-                borderColor: '#FF9800'
+                borderColor: '#4285F4'
             },
-            iconColor: '#FF9800'
+            iconColor: '#4285F4'
         }
     ];
     

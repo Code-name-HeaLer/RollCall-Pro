@@ -1,15 +1,15 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, ScrollView, Pressable, Dimensions } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Calendar, DateData } from 'react-native-calendars';
 import { MarkedDates } from 'react-native-calendars/src/types';
-import { useData } from '../src/context/DataContext';
-import { Session } from '../src/data/types';
-import { Text } from '../src/components/Text';
-import { Card } from '../src/components/Card';
-import StatusBadge from '../src/components/ui/StatusBadge';
+import { useData } from '../../src/context/DataContext';
+import { Session, AttendanceStatus } from '../../src/data/types';
+import { Text } from '../../src/components/Text';
+import { Card } from '../../src/components/Card';
+import StatusBadge from '../../src/components/ui/StatusBadge';
 import { Ionicons } from '@expo/vector-icons';
-import { getThemeColors } from '../src/utils/theme';
+import { getThemeColors } from '../../src/utils/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -65,18 +65,17 @@ interface DaySessionDetail {
 }
 
 const CalendarScreen = () => {
-  const { courses, isLoading, settings } = useData();
+  const { courses, isLoading, settings, recordAttendance } = useData();
   const router = useRouter();
   const colors = getThemeColors(settings?.theme || 'light');
   const [selectedDate, setSelectedDate] = useState<DateData | null>(null);
   const [sessionsForSelectedDate, setSessionsForSelectedDate] = useState<DaySessionDetail[]>([]);
 
-  const handleDayPress = (day: DateData) => {
-    setSelectedDate(day);
-    // Find sessions for the pressed date
+  // Helper function to find sessions for a specific date
+  const findSessionsForDate = (dateString: string): DaySessionDetail[] => {
     const sessionsFound: DaySessionDetail[] = [];
     courses.forEach(course => {
-        const session = course.sessions.find(s => s.date === day.dateString);
+        const session = course.sessions.find(s => s.date === dateString);
         if (session) {
             sessionsFound.push({ 
                 courseId: course.id, 
@@ -85,7 +84,31 @@ const CalendarScreen = () => {
             });
         }
     });
-    setSessionsForSelectedDate(sessionsFound);
+    return sessionsFound;
+  };
+
+  // Initialize with today's date and sessions
+  useEffect(() => {
+    if (!isLoading && courses.length > 0) {
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      const todayData: DateData = {
+        dateString: todayString,
+        day: today.getDate(),
+        month: today.getMonth() + 1,
+        year: today.getFullYear(),
+        timestamp: today.getTime()
+      };
+      
+      setSelectedDate(todayData);
+      setSessionsForSelectedDate(findSessionsForDate(todayString));
+    }
+  }, [isLoading, courses]);
+
+  const handleDayPress = (day: DateData) => {
+    setSelectedDate(day);
+    // Find sessions for the pressed date
+    setSessionsForSelectedDate(findSessionsForDate(day.dateString));
   };
 
   const markedDates = useMemo((): MarkedDates => {
@@ -106,8 +129,8 @@ const CalendarScreen = () => {
             switch (session.status) {
                 case 'present': dotColor = '#10B981'; break;
                 case 'absent': dotColor = '#EF4444'; break;
-                case 'late': dotColor = '#F59E0B'; break;
-                case 'excused': dotColor = '#6B7280'; break;
+                case 'canceled': dotColor = '#F59E0B'; break;
+                case 'holiday': dotColor = '#6B7280'; break;
             }
             if (!marks[dateStr].dots?.some(dot => dot.color === dotColor)){
                  marks[dateStr].dots?.push({ key: `${course.id}-${session.status}`, color: dotColor });
@@ -150,15 +173,73 @@ const CalendarScreen = () => {
     };
   }, [settings?.theme, colors]);
 
+  // Handle changing attendance status for a course on the selected date
+  const handleAttendanceChange = (courseId: string, status: AttendanceStatus) => {
+    if (!selectedDate?.dateString) return;
+    
+    // Update the attendance in context/storage
+    recordAttendance(courseId, selectedDate.dateString, status);
+    
+    // Update the local state
+    setSessionsForSelectedDate(prev => 
+      prev.map(item => {
+        if (item.courseId === courseId) {
+          return {
+            ...item,
+            session: {
+              ...item.session,
+              status
+            }
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  // Render attendance action buttons for a course
+  const renderAttendanceActions = (courseId: string, currentStatus?: AttendanceStatus) => {
+    return (
+      <View style={[styles.attendanceActions, { borderTopColor: colors.border }]}>
+        {(['present', 'absent', 'canceled', 'holiday'] as AttendanceStatus[]).map(status => (
+          <Pressable 
+            key={status}
+            onPress={() => handleAttendanceChange(courseId, status)}
+            style={({pressed}) => [
+              styles.actionIcon,
+              currentStatus && currentStatus !== status ? { opacity: 0.3 } : { opacity: 1 }, 
+              pressed ? { opacity: 0.6 } : null,
+              { backgroundColor: colors.card }
+            ]}
+          >
+            <Ionicons 
+              name={{
+                present: 'checkmark-circle-outline',
+                absent: 'close-circle-outline',
+                canceled: 'ban-outline',
+                holiday: 'sunny-outline'
+              }[status] as any}
+              size={24} 
+              color={{
+                present: colors.success,
+                absent: colors.danger,
+                canceled: colors.warning,
+                holiday: colors.primary
+              }[status]}
+            />
+          </Pressable>
+        ))}
+      </View>
+    );
+  };
+
   // Render item for the sessions list
   const renderSessionItem = ({ item }: { item: DaySessionDetail }) => (
-    <Pressable
-      onPress={() => router.push(`/course/${item.courseId}`)}
-      style={({ pressed }) => [
+    <View
+      style={[
         styles.sessionItem,
         { 
           backgroundColor: colors.card,
-          opacity: pressed ? 0.8 : 1
         }
       ]}
     >
@@ -191,8 +272,16 @@ const CalendarScreen = () => {
             </Text>
           </View>
         )}
+
+        {/* Add attendance action buttons */}
+        <View style={styles.attendanceEditSection}>
+          <Text variant="caption" color="secondaryText" style={styles.editLabel}>
+            {item.session.status ? "Change Attendance Status:" : "Record Attendance:"}
+          </Text>
+          {renderAttendanceActions(item.courseId, item.session.status)}
+        </View>
       </View>
-    </Pressable>
+    </View>
   );
 
   if (isLoading) {
@@ -207,9 +296,7 @@ const CalendarScreen = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen 
         options={{ 
-          title: 'Calendar',
-          headerStyle: { backgroundColor: colors.card },
-          headerShadowVisible: false,
+          headerShown: false,
         }} 
       />
       
@@ -253,6 +340,9 @@ const CalendarScreen = () => {
                 <Text variant="body" color="secondaryText" align="center">
                   No sessions recorded for this date
                 </Text>
+                <Text variant="caption" color="secondaryText" align="center" style={styles.emptySubtext}>
+                  Select a course from the home screen to record attendance
+                </Text>
               </View>
             )}
           </Card>
@@ -291,7 +381,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   sessionWrapper: {
-    marginBottom: 8,
+    marginBottom: 16,
   },
   sessionItem: {
     borderRadius: 12,
@@ -345,6 +435,32 @@ const styles = StyleSheet.create({
   },
   lastSessionWrapper: {
     marginBottom: 0,
+  },
+  emptySubtext: {
+    marginTop: 8,
+  },
+  // Attendance editing styles
+  attendanceEditSection: {
+    marginTop: 16,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  editLabel: {
+    marginBottom: 8,
+  },
+  attendanceActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
   },
 });
 

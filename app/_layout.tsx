@@ -1,4 +1,5 @@
 import 'react-native-get-random-values';
+// Use Stack as the primary navigator
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { View, ActivityIndicator, Platform, Alert, StatusBar } from 'react-native';
@@ -6,6 +7,8 @@ import { DataProvider, useData } from '../src/context/DataContext';
 import * as Notifications from 'expo-notifications';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { getThemeColors } from '../src/utils/theme';
+// Ionicons are not needed here anymore, will be used in (tabs)/_layout.tsx
+// import { Ionicons } from '@expo/vector-icons';
 
 // Request notification permissions
 async function registerForPushNotificationsAsync() {
@@ -47,7 +50,7 @@ async function registerForPushNotificationsAsync() {
 // Inner component to access context after provider
 function ThemedAppLayout() {
   const { settings, isLoading } = useData();
-  const router = useRouter(); 
+  const router = useRouter();
 
   // Refs for notification listeners
   const notificationListener = useRef<Notifications.Subscription>();
@@ -87,11 +90,11 @@ function ThemedAppLayout() {
 
   // Keep loading check
   if (isLoading || !settings) {
-      return (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
-              <ActivityIndicator size="large" color="#4F46E5" />
-          </View>
-      );
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+        <ActivityIndicator size="large" color="#4F46E5" />
+      </View>
+    );
   }
 
   // Get theme colors from our utility
@@ -100,35 +103,34 @@ function ThemedAppLayout() {
   return (
     <>
       {/* Set status bar style based on theme */}
-      <StatusBar 
-        barStyle={settings.theme === 'dark' ? 'light-content' : 'dark-content'} 
-        backgroundColor={colors.headerBackground}
+      <StatusBar
+        barStyle={settings.theme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.headerBackground} // Use standard header background
       />
-      
+
+      {/* Use Stack Navigator for all screens */}
       <Stack
+        initialRouteName="(tabs)"
         screenOptions={{
-          headerTitleStyle: {
-            fontWeight: 'bold',
-            color: colors.headerText,
-          },
           headerStyle: {
             backgroundColor: colors.headerBackground,
           },
           headerTintColor: colors.headerText,
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
           contentStyle: {
             backgroundColor: colors.background,
           },
-          headerShadowVisible: true,
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Home' }} />
-        <Stack.Screen name="courses" options={{ title: 'Courses' }} />
-        <Stack.Screen name="add-course" options={{ title: 'Add Course', presentation: 'modal' }} /> 
+        {/* Tab screens - we'll handle the tab bar separately */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+        {/* Non-tab modal and detail screens */}
+        <Stack.Screen name="add-course" options={{ title: 'Add Course', presentation: 'modal' }} />
         <Stack.Screen name="course/[id]" options={{ title: 'Course Details' }} />
-        <Stack.Screen name="edit-course/[id]" options={{ title: 'Edit Course' }} />
-        <Stack.Screen name="calendar" options={{ title: 'Calendar' }} />
-        <Stack.Screen name="statistics" options={{ title: 'Statistics' }} />
-        <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+        <Stack.Screen name="edit-course/[id]" options={{ title: 'Edit Course', presentation: 'modal' }} />
         <Stack.Screen name="timetable" options={{ title: 'Manage Timetable' }} />
       </Stack>
     </>

@@ -1,4 +1,4 @@
-export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+export type AttendanceStatus = 'present' | 'absent' | 'canceled' | 'holiday';
 
 export interface Session {
   date: string; // Consider using Date objects, but string (YYYY-MM-DD) is simpler for storage
@@ -22,6 +22,8 @@ export interface Course {
   color: string;
   professor?: string;
   attendanceThreshold?: number;
+  totalClassesDone?: number;     // For mid-semester entry
+  totalClassesAttended?: number; // For mid-semester entry
   sessions: Session[];
 }
 
@@ -32,8 +34,26 @@ export interface AppSettings {
   notificationsEnabled: boolean;
 }
 
+export interface Assignment {
+  id: string;
+  title: string;
+  courseId: string;
+  dayOfWeek: string;
+  dueDate?: Date;
+  completed: boolean;
+  completedType?: 'success' | 'failed';
+}
+
 export interface AppData {
   courses: Course[];
   settings: AppSettings;
   timetable: TimetableEntry[];
+  assignments: Assignment[];
+}
+
+// Add DailyAttendance interface
+export interface DailyAttendance {
+  date: string;
+  dayName: string;
+  status: string | null;
 } 

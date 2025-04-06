@@ -1,14 +1,20 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
-import { AppData, Course, AppSettings, Session, AttendanceStatus, TimetableEntry } from '../data/types';
+import { AppData, Course, AppSettings, Session, AttendanceStatus, TimetableEntry, DailyAttendance, Assignment } from '../data/types';
 import { loadAppData, saveAppData } from '../utils/storage';
 import { v4 as uuidv4 } from 'uuid'; // Need to install uuid
 import { scheduleCourseReminders, cancelAllCourseReminders } from '../utils/notifications'; // Import notification utilities
 import { debounce } from 'lodash'; // Assuming lodash is installed or installable
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { defaultAppData, addDummyData } from '../data/defaultData';
+import { prepareCalendarData } from '../utils/calendarUtils';
+import { View, Text } from 'react-native';
 
 // Define the type for the data passed to addCourse, including optional fields
 type AddCourseData = Omit<Course, 'id' | 'sessions' | 'attendanceThreshold' | 'professor'> & {
     professor?: string;
     attendanceThreshold?: number;
+    totalClassesDone?: number;
+    totalClassesAttended?: number;
 };
 
 // Type for data passed to updateCourse
@@ -18,6 +24,7 @@ interface DataContextProps {
   courses: Course[];
   settings: AppSettings | null;
   timetable: TimetableEntry[];
+  assignments: Assignment[];
   isLoading: boolean;
   addCourse: (courseData: AddCourseData) => Promise<void>;
   addAttendanceSession: (courseId: string, session: Omit<Session, 'notes' | 'assignments'>) => Promise<void>;
@@ -29,7 +36,15 @@ interface DataContextProps {
   addTimetableEntry: (entry: Omit<TimetableEntry, 'id'>) => Promise<void>;
   deleteTimetableEntry: (entryId: string) => Promise<void>;
   restoreAllData: (restoredData: AppData) => Promise<void>;
-  // Add more functions later (updateCourse, deleteCourse, recordAttendance, updateSettings)
+  setCourses: (courses: Course[]) => void;
+  setSettings: (settings: AppSettings) => void;
+  setTimetable: (timetable: TimetableEntry[]) => void;
+  setAssignments: (assignments: Assignment[]) => void;
+  getAttendanceForCourse: (courseId: string) => DailyAttendance[];
+  recordAttendance: (courseId: string, date: string, status: AttendanceStatus) => void;
+  addAssignment: (assignment: Assignment) => void;
+  toggleAssignmentStatus: (id: string, status: 'success' | 'failed') => void;
+  saveAppData: (data: AppData) => Promise<boolean>;
 }
 
 const defaultSettings: AppSettings = {
@@ -47,13 +62,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [courses, setCourses] = useState<Course[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // --- Debounced Save Function --- 
   const debouncedSave = useCallback(
-    debounce((dataToSave: AppData) => {
+    debounce(async (dataToSave: AppData) => {
         console.log('Debounced: Saving data...');
-        saveAppData(dataToSave);
+        const success = await saveAppData(dataToSave);
+        if (!success) {
+          console.error('Failed to save data in debounced save');
+          setSaveError('Failed to save data. Please check storage permissions.');
+        } else {
+          setSaveError(null);
+        }
     }, DEBOUNCE_DELAY),
     [] // No dependencies, created once
   );
@@ -76,48 +99,85 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     [] // No dependencies, created once
   );
 
+  // Explicitly typed save function to ensure proper error handling
+  const handleSaveAppData = async (data: AppData): Promise<boolean> => {
+    try {
+      return await saveAppData(data);
+    } catch (error) {
+      console.error('Error in handleSaveAppData:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      const data = await loadAppData();
-      if (data) {
-        setCourses(data.courses || []);
-        setSettings(data.settings || defaultSettings);
-        setTimetable(data.timetable || []);
-      } else {
-        // Initialize with default settings if no data found
+      setSaveError(null);
+      
+      try {
+        const storedData = await loadAppData();
+        
+        if (storedData) {
+          setCourses(storedData.courses || []);
+          setSettings(storedData.settings || defaultSettings);
+          setTimetable(storedData.timetable || []);
+          setAssignments(storedData.assignments || []);
+        } else {
+          // No stored data, initialize with defaults
+          const dummyData = await addDummyData();
+          setCourses(dummyData.courses || []);
+          setSettings(dummyData.settings || defaultSettings);
+          setTimetable(dummyData.timetable || []);
+          setAssignments(dummyData.assignments || []);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        // Fallback to default data on error
         setCourses([]);
         setSettings(defaultSettings);
         setTimetable([]);
+        setAssignments([]);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
+
     loadData();
   }, []);
 
   // Debounced Save Effect
   useEffect(() => {
     if (!isLoading && settings) { 
-        const currentData: AppData = { courses, settings, timetable };
+        const currentData: AppData = { 
+          courses, 
+          settings, 
+          timetable, 
+          assignments: assignments || [] 
+        };
         debouncedSave(currentData);
     }
     // Cleanup function to cancel any pending save on unmount
     return () => {
         debouncedSave.cancel();
     };
-  }, [courses, settings, timetable, isLoading, debouncedSave]); // Include debouncedSave
+  }, [courses, settings, timetable, assignments, isLoading, debouncedSave]); // Include debouncedSave
 
   // Debounced Notification Effect
   useEffect(() => {
     if (!isLoading && settings) {
-        const currentData: AppData = { courses, settings, timetable };
+        const currentData: AppData = { 
+          courses, 
+          settings, 
+          timetable, 
+          assignments: assignments || [] 
+        };
         debouncedNotifications(currentData);
     }
     // Cleanup function to cancel any pending notification update on unmount
     return () => {
         debouncedNotifications.cancel();
     };
-  }, [courses, settings, timetable, isLoading, debouncedNotifications]); // Include debouncedNotifications
+  }, [courses, settings, timetable, assignments, isLoading, debouncedNotifications]); // Include debouncedNotifications
 
   const addCourse = async (courseData: AddCourseData) => {
     const newCourse: Course = {
@@ -128,6 +188,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // professor and threshold are optional
       ...(courseData.professor && { professor: courseData.professor }),
       ...(courseData.attendanceThreshold && { attendanceThreshold: courseData.attendanceThreshold }),
+      ...(courseData.totalClassesDone && { totalClassesDone: courseData.totalClassesDone }),
+      ...(courseData.totalClassesAttended && { totalClassesAttended: courseData.totalClassesAttended }),
     };
     setCourses(prevCourses => [...prevCourses, newCourse]);
     // Data saving is handled by the useEffect hook
@@ -165,15 +227,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return course;
       })
     );
-     // Data saving is handled by the useEffect hook
   };
 
   const updateSettings = async (newSettings: Partial<AppSettings>) => {
-      setSettings((prevSettings: AppSettings | null) => ({
-          ...(prevSettings || defaultSettings), // Base on previous or default
-          ...newSettings, // Apply partial updates
-      }));
-       // Data saving is handled by the useEffect hook
+    setSettings((prevSettings: AppSettings | null) => ({
+        ...(prevSettings || defaultSettings), // Base on previous or default
+        ...newSettings, // Apply partial updates
+    }));
   };
 
   // Function to update notes/assignments for a specific session
@@ -205,17 +265,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               return course;
           })
       );
-      // Data saving handled by useEffect
   };
 
   // Function to update an existing course
   const updateCourse = async (courseId: string, courseData: UpdateCourseData) => {
-    // Remove schedule and location from data being merged
-    const { schedule, location, ...restData } = courseData as any; // Type assertion to easily omit
     setCourses(prevCourses =>
         prevCourses.map(course =>
             course.id === courseId 
-                ? { ...course, ...restData } 
+                ? { ...course, ...courseData } 
                 : course
         )
     );
@@ -224,52 +281,139 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Function to delete a course
   const deleteCourse = async (courseId: string) => {
     setCourses(prevCourses => prevCourses.filter(course => course.id !== courseId));
-    // Also delete related timetable entries
-    setTimetable(prev => prev.filter(entry => entry.courseId !== courseId));
+    
+    // Also clean up timetable entries for the deleted course
+    setTimetable(prevTimetable => prevTimetable.filter(entry => entry.courseId !== courseId));
+    
+    // Clean up assignments for the deleted course
+    setAssignments(prevAssignments => prevAssignments.filter(assignment => assignment.courseId !== courseId));
   };
 
-  // Function to restore all application data
-  const restoreAllData = async (restoredData: AppData) => {
-    if (restoredData && restoredData.courses && restoredData.settings) {
-        setCourses(restoredData.courses);
-        setSettings(restoredData.settings);
-        setTimetable(restoredData.timetable || []);
-    } else {
-        console.error("Invalid data format for restore.");
-        throw new Error("Invalid data format provided for restoration.");
-    }
-  };
-
-  // ADDED: Add Timetable Entry
+  // Function to add a timetable entry
   const addTimetableEntry = async (entryData: Omit<TimetableEntry, 'id'>) => {
     const newEntry: TimetableEntry = {
-        id: uuidv4(),
         ...entryData,
+        id: uuidv4(),
     };
-    setTimetable(prev => [...prev, newEntry]);
+    setTimetable(prevEntries => [...prevEntries, newEntry]);
   };
 
-  // ADDED: Delete Timetable Entry
+  // Function to delete a timetable entry
   const deleteTimetableEntry = async (entryId: string) => {
-      setTimetable(prev => prev.filter(entry => entry.id !== entryId));
+    setTimetable(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
   };
+
+  // Function to restore all app data (for backup/restore functionality)
+  const restoreAllData = async (restoredData: AppData) => {
+    setCourses(restoredData.courses || []);
+    setSettings(restoredData.settings || defaultSettings);
+    setTimetable(restoredData.timetable || []);
+    setAssignments(restoredData.assignments || []);
+  };
+
+  // Function to add a new assignment
+  const addAssignment = (assignment: Assignment) => {
+    setAssignments(prev => [...prev, assignment]);
+  };
+
+  // Function to toggle assignment completion status
+  const toggleAssignmentStatus = (id: string, status: 'success' | 'failed') => {
+    setAssignments(prev => 
+      prev.map(assignment => 
+        assignment.id === id 
+          ? { ...assignment, completed: true, completedType: status } 
+          : assignment
+      )
+    );
+  };
+
+  // Get attendance data for a course
+  const getAttendanceForCourse = useCallback((courseId: string): DailyAttendance[] => {
+    const course = courses.find(c => c.id === courseId);
+    if (!course) return [];
+    
+    // Build attendance records from sessions
+    return course.sessions.map(session => {
+      const sessionDate = new Date(session.date);
+      const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(sessionDate);
+      
+      return {
+        date: session.date,
+        dayName,
+        status: session.status
+      };
+    });
+  }, [courses]);
+
+  // Record attendance for a course on a specific date
+  const recordAttendance = useCallback((courseId: string, date: string, status: AttendanceStatus) => {
+    setCourses(prevCourses =>
+      prevCourses.map(course => {
+        if (course.id === courseId) {
+          const existingSessionIndex = course.sessions.findIndex(s => s.date === date);
+          if (existingSessionIndex > -1) {
+            // Update existing session
+            const updatedSessions = [...course.sessions];
+            updatedSessions[existingSessionIndex] = {
+              ...updatedSessions[existingSessionIndex],
+              status
+            };
+            return { ...course, sessions: updatedSessions };
+          } else {
+            // Add new session
+            return {
+              ...course,
+              sessions: [...course.sessions, { date, status }]
+            };
+          }
+        }
+        return course;
+      })
+    );
+  }, []);
 
   return (
-    <DataContext.Provider value={{ 
-        courses, 
-        settings, 
+    <DataContext.Provider
+      value={{
+        courses,
+        settings,
         timetable,
-        isLoading, 
-        addCourse, 
-        addAttendanceSession, 
-        updateSettings, 
-        updateSessionDetails, 
+        assignments,
+        isLoading,
+        addCourse,
+        addAttendanceSession,
+        updateSettings,
+        updateSessionDetails,
         updateCourse,
         deleteCourse,
         addTimetableEntry,
         deleteTimetableEntry,
-        restoreAllData
-    }}>
+        restoreAllData,
+        setCourses,
+        setSettings,
+        setTimetable,
+        setAssignments,
+        getAttendanceForCourse,
+        recordAttendance,
+        addAssignment,
+        toggleAssignmentStatus,
+        saveAppData: handleSaveAppData,
+      }}
+    >
+      {/* Display save error if present */}
+      {saveError && (
+        <View style={{ 
+          backgroundColor: 'rgba(239, 68, 68, 0.9)', 
+          padding: 10, 
+          position: 'absolute', 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          zIndex: 9999 
+        }}>
+          <Text style={{ color: 'white', textAlign: 'center' }}>{saveError}</Text>
+        </View>
+      )}
       {children}
     </DataContext.Provider>
   );

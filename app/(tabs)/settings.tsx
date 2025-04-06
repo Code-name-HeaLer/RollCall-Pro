@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Switch, ActivityIndicator, Pressable, Alert, Dimensions } from 'react-native';
 import { Stack } from 'expo-router';
-import { useData } from '../src/context/DataContext';
-import { generateAttendanceCsv } from '../src/utils/export';
+import { useData } from '../../src/context/DataContext';
+import { generateAttendanceCsv } from '../../src/utils/export';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
-import { AppData } from '../src/data/types';
+import { AppData } from '../../src/data/types';
 import { useActionSheet } from '@expo/react-native-action-sheet';
-import { Text } from '../src/components/Text';
-import { Card } from '../src/components/Card';
-import { getThemeColors } from '../src/utils/theme';
+import { Text } from '../../src/components/Text';
+import { Card } from '../../src/components/Card';
+import { getThemeColors } from '../../src/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 import ReactNativeModal from 'react-native-modal';
+import * as StorageAccessFramework from 'expo-storage-access-framework';
 
 const { width } = Dimensions.get('window');
 
@@ -61,8 +62,8 @@ const SettingsButton = ({ title, onPress, disabled, icon, color }: {
 );
 
 const SettingsScreen = () => {
-  // Get settings, courses, and update function from context
-  const { settings, courses, isLoading, updateSettings, restoreAllData } = useData(); 
+  // Destructure timetable directly from useData
+  const { settings, courses, timetable, isLoading, updateSettings, restoreAllData } = useData(); 
   const { showActionSheetWithOptions } = useActionSheet();
   const colors = getThemeColors(settings?.theme || 'light');
 
@@ -131,13 +132,19 @@ const SettingsScreen = () => {
   const handleBackupData = async () => { 
       setIsBackingUp(true);
       console.log('Backup Data Pressed');
-      const appData: AppData = { courses, settings: settings! }; // Ensure settings is not null
       
       if (!settings) {
           Alert.alert("Backup Error", "Settings are not loaded yet.");
           setIsBackingUp(false);
           return;
       }
+      
+      // Ensure timetable from context is included
+      const appData: AppData = { 
+          courses,
+          settings,
+          timetable // Use timetable from context
+      };
 
       const filename = `attendance_manager_backup_${Date.now()}.json`;
       const fileUri = FileSystem.documentDirectory + filename;
@@ -269,9 +276,7 @@ const SettingsScreen = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen 
         options={{ 
-          title: 'Settings',
-          headerStyle: { backgroundColor: colors.card },
-          headerShadowVisible: false,
+          headerShown: false,
         }} 
       />
       
@@ -380,7 +385,7 @@ const SettingsScreen = () => {
         <Card title="About" style={styles.card}>
           <View style={styles.aboutContainer}>
             <Text variant="h2" weight="bold" color="primary" align="center">RollCall Pro</Text>
-            <Text variant="body2" color="secondaryText" align="center" style={styles.versionText}>Version 1.0.0</Text>
+            <Text variant="body2" color="secondaryText" align="center" style={styles.versionText}>Version 1.1.5</Text>
             <Text variant="caption" color="secondaryText" align="center" style={styles.copyrightText}>
               © 2025 HeaLer | All Rights Reserved
             </Text>

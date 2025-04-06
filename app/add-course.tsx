@@ -13,6 +13,8 @@ const AddCourseScreen = () => {
   const [professor, setProfessor] = useState('');
   const [color, setColor] = useState('#4F46E5');
   const [threshold, setThreshold] = useState('');
+  const [classesDone, setClassesDone] = useState('');
+  const [classesAttended, setClassesAttended] = useState('');
   
   const { addCourse, settings } = useData();
   const router = useRouter();
@@ -34,12 +36,42 @@ const AddCourseScreen = () => {
       attendanceThreshold = parsedThreshold;
     }
 
+    // Parse and validate classes done and attended
+    let totalClassesDone: number | undefined = undefined;
+    let totalClassesAttended: number | undefined = undefined;
+
+    if (classesDone.trim()) {
+      totalClassesDone = parseInt(classesDone.trim(), 10);
+      if (isNaN(totalClassesDone) || totalClassesDone < 0) {
+        Alert.alert('Error', 'Total classes done must be a positive number.');
+        return;
+      }
+    }
+
+    if (classesAttended.trim()) {
+      totalClassesAttended = parseInt(classesAttended.trim(), 10);
+      if (isNaN(totalClassesAttended) || totalClassesAttended < 0) {
+        Alert.alert('Error', 'Total classes attended must be a positive number.');
+        return;
+      }
+    }
+
+    // Validate that attended classes don't exceed total classes
+    if (totalClassesDone !== undefined && totalClassesAttended !== undefined) {
+      if (totalClassesAttended > totalClassesDone) {
+        Alert.alert('Error', 'Attended classes cannot exceed total classes done.');
+        return;
+      }
+    }
+
     try {
       await addCourse({
         name: name.trim(),
         color,
         professor: professor.trim() || undefined,
         attendanceThreshold,
+        totalClassesDone,
+        totalClassesAttended,
       });
       router.back();
     } catch (error) {
@@ -118,6 +150,39 @@ const AddCourseScreen = () => {
             maxLength={3}
           />
         </View>
+
+        {/* Mid-Semester Entry Fields */}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="calendar-outline" size={18} color={colors.secondaryText} style={styles.sectionIcon} />
+          <Text variant="body" weight="semibold" color="secondaryText">Mid-Semester Entry (Optional)</Text>
+        </View>
+        
+        <View style={styles.inputContainer}>
+          <Text variant="body2" color="secondaryText" style={styles.label}>Total Classes Done</Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: colors.inputBackground, color: colors.text, borderColor: colors.border }]}
+            value={classesDone}
+            onChangeText={setClassesDone}
+            placeholder="e.g., 10"
+            placeholderTextColor={colors.secondaryText}
+            keyboardType="numeric"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text variant="body2" color="secondaryText" style={styles.label}>Total Classes Attended</Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: colors.inputBackground, color: colors.text, borderColor: colors.border }]}
+            value={classesAttended}
+            onChangeText={setClassesAttended}
+            placeholder="e.g., 8"
+            placeholderTextColor={colors.secondaryText}
+            keyboardType="numeric"
+          />
+          <Text variant="caption" color="secondaryText" style={styles.helpText}>
+            These values will be used to calculate your attendance percentage for courses you joined mid-semester.
+          </Text>
+        </View>
       </Card>
 
       {/* Submit Button */}
@@ -166,6 +231,19 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: 16,
     height: 52,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  sectionIcon: {
+    marginRight: 8,
+  },
+  helpText: {
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
 
