@@ -34,35 +34,6 @@ A sleek, modern attendance tracking application for students built with React Na
 - **Icons**: Ionicons (Expo Vector Icons)
 - **Charts**: (Potentially React Native SVG & Victory Charts - verify if used)
 
-## 📁 Project Structure
-
-AttendanceManager/
-├── app/ # Expo Router screens and navigation setup (layout.tsx)
-│ ├── layout.tsx # Main navigation layout
-│ ├── index.tsx # Home screen
-│ ├── courses.tsx # Courses list screen
-│ ├── add-course.tsx # Add course screen
-│ ├── calendar.tsx # Calendar view screen
-│ ├── settings.tsx # Settings screen
-│ ├── statistics.tsx # Statistics screen
-│ └── ... # Other screens and components specific to routing
-├── assets/ # Static assets (images, fonts)
-├── src/ # Core application logic and UI components
-│ ├── components/ # Reusable UI components (Card, Text, StatusBadge, etc.)
-│ ├── context/ # React Context for global state (DataContext)
-│ ├── data/ # Data types, initial data, or data helpers
-│ ├── utils/ # Utility functions (theming, helpers)
-│ └── ...
-├── .expo/ # Expo generated files
-├── node_modules/ # Project dependencies
-├── .gitignore # Git ignore rules
-├── app.json # Expo app configuration
-├── babel.config.js # Babel configuration
-├── package.json # Project dependencies and scripts
-├── tailwind.config.js # Tailwind CSS configuration
-├── tsconfig.json # TypeScript configuration
-└── readme.md # This file
-
 ## 🚀 Getting Started
 
 ### Prerequisites
