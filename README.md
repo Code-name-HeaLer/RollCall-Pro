@@ -28,18 +28,18 @@ A sleek, modern attendance tracking application for students built with React Na
 - **Framework**: React Native (Expo SDK)
 - **Language**: TypeScript
 - **Navigation**: Expo Router
-- **Styling**: Tailwind CSS (likely via NativeWind)
+- **Styling**: Tailwind CSS ( via NativeWind)
 - **State Management**: React Context API
-- **Local Storage**: AsyncStorage
+- **Storage**: SQL Lite
 - **Icons**: Ionicons (Expo Vector Icons)
-- **Charts**: (Potentially React Native SVG & Victory Charts - verify if used)
+- **Charts**: React Native SVG & Victory Charts
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js (LTS version recommended)
-- npm or yarn
+- npm/yarn/bun
 - Expo Go app on your physical device or an emulator/simulator setup
 
 ### Installation
